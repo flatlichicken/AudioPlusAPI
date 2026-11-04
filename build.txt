@@ -1,3 +1,3 @@
 displayName = Audio+ API
 author = flatlichicken
-version = 0.1
+version = 1.0
