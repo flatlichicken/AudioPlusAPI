@@ -131,7 +131,7 @@ namespace AudioPlusAPI
             _isPlaying = true;
         }
 
-        public double GetPositionMilliseconds()
+        public double GetPosMs()
         {
             if (!_isPlaying)
                 return 0;
@@ -139,7 +139,7 @@ namespace AudioPlusAPI
             return _timer.Elapsed.TotalMilliseconds;
         }
 
-        public TimeSpan GetPosition()
+        public TimeSpan GetPos()
         {
             return _timer.Elapsed;
         }
