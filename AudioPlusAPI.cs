@@ -41,6 +41,21 @@ namespace AudioPlusAPI
                 return null;
             }
 
+            if (args.Length == 2 && args[0] is string getPosMsCommand && getPosMsCommand == "GetPosMs" && args[1] is CustomAudioTrack track5)
+            {
+                return track5.GetPosMs();
+            }
+
+            if (args.Length == 2 && args[0] is string getPosCommand && getPosCommand == "GetPos" && args[1] is CustomAudioTrack track6)
+            {
+                return track6.GetPos();
+            }
+
+            if (args.Length == 2 && args[0] is string getVolCommand && getVolCommand == "GetVolume" && args[1] is CustomAudioTrack track7)
+            {
+                return track7.GetVolume();
+            }
+
             return null;
         }
 
@@ -160,6 +175,11 @@ namespace AudioPlusAPI
         public TimeSpan GetPos()
         {
             return _timer.Elapsed;
+        }
+        
+        public float GetVolume()
+        {
+            return _volume;
         }
     }
 }
