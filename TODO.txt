@@ -1,3 +1,0 @@
-override the audio system with a special function
-get the time stamp of the song
-allow ogg fiels to be played from anywhere

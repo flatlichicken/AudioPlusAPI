@@ -10,7 +10,23 @@ namespace AudioPlusAPI
     {
         public static AudioPlusAPI Instance => ModContent.GetInstance<AudioPlusAPI>();
 
-        public CustomAudioTrack LoadOgg(Stream oggStream)
+        public override object Call(params object[] args)
+        {
+            if (args.Length == 2 && args[0] is string command && command == "LoadOgg" && args[1] is Stream oggStream)
+            {
+                return LoadOgg(oggStream);
+            }
+
+            if (args.Length == 2 && args[0] is string playCommand && playCommand == "Play" && args[1] is CustomAudioTrack track)
+            {
+                track.Play();
+                return null;
+            }
+
+            return null;
+        }
+
+        public static CustomAudioTrack LoadOgg(Stream oggStream)
         {
             using (NVorbis.VorbisReader reader = new NVorbis.VorbisReader(oggStream, true))
             {
