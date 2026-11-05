@@ -1,8 +1,3 @@
 an audio api
 
-features:
-get the timestamp of a song
-get the song file from anywhere
-can play or pause or stop
-
-currently supports ogg
+can play an ogg file from anywhere with little lag

@@ -131,12 +131,12 @@ namespace AudioPlusAPI
             _isPlaying = true;
         }
 
-        public double GetPositionSeconds()
+        public double GetPositionMilliseconds()
         {
             if (!_isPlaying)
                 return 0;
 
-            return _timer.Elapsed.TotalSeconds;
+            return _timer.Elapsed.TotalMilliseconds;
         }
 
         public TimeSpan GetPosition()
