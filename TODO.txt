@@ -1,1 +1,2 @@
-github documentation
+add volume control
+update github documentation
