@@ -23,6 +23,24 @@ namespace AudioPlusAPI
                 return null;
             }
 
+            if (args.Length == 2 && args[0] is string stopCommand && stopCommand == "Stop" && args[1] is CustomAudioTrack track2)
+            {
+                track2.Stop();
+                return null;
+            }
+
+            if (args.Length == 2 && args[0] is string pauseCommand && pauseCommand == "Pause" && args[1] is CustomAudioTrack track3)
+            {
+                track3.Pause();
+                return null;
+            }
+
+            if (args.Length == 2 && args[0] is string resumeCommand && resumeCommand == "Resume" && args[1] is CustomAudioTrack track4)
+            {
+                track4.Resume();
+                return null;
+            }
+
             return null;
         }
 
