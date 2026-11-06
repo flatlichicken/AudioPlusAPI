@@ -12,6 +12,19 @@ if (ModLoader.TryGetMod("AudioPlusAPI", out Mod audioAPI))
 }
 ```
 
+#### Load music instead of a sound effect:
+```csharp
+if (ModLoader.TryGetMod("AudioPlusAPI", out Mod audioAPI))
+{
+    using (Stream s = Mod.GetFileStream("Content/Charts/Music/Theme.ogg"))
+        musTheme = audioAPI.Call("LoadOgg", s, true);
+
+    // or:
+    // using (Stream s = Mod.GetFileStream("Content/Charts/Music/Theme.ogg"))
+    //     musTheme = audioAPI.Call("LoadMusic", s);
+}
+```
+
 #### Play/Stop/Pause/Resume audio:
 ```csharp
 if (ModLoader.TryGetMod("AudioPlusAPI", out Mod audioAPI))
@@ -40,6 +53,8 @@ if (ModLoader.TryGetMod("AudioPlusAPI", out Mod audioAPI))
     audioAPI.Call("SetPitch", musInst, 0.5f);
 }
 ```
+
+`LoadOgg` can be used normally for sound effects, and with a `true` flag it behaves like music and respects Terraria's music volume slider. `LoadMusic` and `LoadOggMusic` are convenience aliases for the same behavior.
 
 Pitch is clamped between `-1` and `1`. A positive value speeds up playback and raises its pitch; a negative value slows it down and lowers its pitch. Use `0` for normal playback speed.
 

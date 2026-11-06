@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using Microsoft.Xna.Framework.Audio;
+using Terraria;
 using Terraria.ModLoader;
 
 namespace AudioPlusAPI
@@ -15,6 +16,16 @@ namespace AudioPlusAPI
             if (args.Length == 2 && args[0] is string command && command == "LoadOgg" && args[1] is Stream oggStream)
             {
                 return LoadOgg(oggStream);
+            }
+
+            if (args.Length == 3 && args[0] is string command2 && command2 == "LoadOgg" && args[1] is Stream oggStream2 && args[2] is bool musicMode)
+            {
+                return LoadOgg(oggStream2, musicMode);
+            }
+
+            if (args.Length == 2 && args[0] is string musicCommand && (musicCommand == "LoadMusic" || musicCommand == "LoadOggMusic") && args[1] is Stream musicStream)
+            {
+                return LoadMusic(musicStream);
             }
 
             if (args.Length == 2 && args[0] is string playCommand && playCommand == "Play" && args[1] is CustomAudioTrack track)
@@ -71,7 +82,7 @@ namespace AudioPlusAPI
             return null;
         }
 
-        public static CustomAudioTrack LoadOgg(Stream oggStream)
+        public static CustomAudioTrack LoadOgg(Stream oggStream, bool music = false)
         {
             using (NVorbis.VorbisReader reader = new NVorbis.VorbisReader(oggStream, true))
             {
@@ -108,15 +119,26 @@ namespace AudioPlusAPI
 
                     memStream.Position = 0;
                     SoundEffect sound = SoundEffect.FromStream(memStream);
-                    return new CustomAudioTrack(sound);
+                    return new CustomAudioTrack(sound, music);
                 }
             }
         }
+
+        public static CustomAudioTrack LoadMusic(Stream oggStream)
+        {
+            return LoadOgg(oggStream, true);
+        }
+
+        public static CustomAudioTrack LoadOggMusic(Stream oggStream)
+        {
+            return LoadOgg(oggStream, true);
+        }
     }
 
-	public class CustomAudioTrack
+    public class CustomAudioTrack
     {
         private readonly SoundEffect _soundEffect;
+        private readonly bool _isMusic;
         private SoundEffectInstance _instance;
         private readonly Stopwatch _timer = new Stopwatch();
         private float _volume = 1.0f;
@@ -130,7 +152,7 @@ namespace AudioPlusAPI
                 _volume = Math.Clamp(value, 0f, 1f);
                 if (_instance != null)
                 {
-                    _instance.Volume = _volume;
+                    _instance.Volume = _isMusic ? _volume * Main.musicVolume : _volume;
                 }
             }
         }
@@ -148,20 +170,23 @@ namespace AudioPlusAPI
             }
         }
 
-        public CustomAudioTrack(SoundEffect soundEffect)
+        public CustomAudioTrack(SoundEffect soundEffect, bool music = false)
         {
             _soundEffect = soundEffect;
+            _isMusic = music;
             _instance = _soundEffect.CreateInstance();
-            _instance.Volume = _volume;
+            _instance.Volume = _isMusic ? _volume * Main.musicVolume : _volume;
             _instance.Pitch = _pitch;
         }
+
+        public bool IsMusic => _isMusic;
 
         public void Play()
         {
             if (_instance.State == SoundState.Stopped)
             {
                 _instance = _soundEffect.CreateInstance();
-                _instance.Volume = _volume;
+                _instance.Volume = _isMusic ? _volume * Main.musicVolume : _volume;
                 _instance.Pitch = _pitch;
             }
             _instance.Play();
