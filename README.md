@@ -32,5 +32,16 @@ if (ModLoader.TryGetMod("AudioPlusAPI", out Mod audioAPI))
 }
 ```
 
+#### Set volume and pitch:
+```csharp
+if (ModLoader.TryGetMod("AudioPlusAPI", out Mod audioAPI))
+{
+    audioAPI.Call("SetVolume", musInst, 0.5f);
+    audioAPI.Call("SetPitch", musInst, 0.5f);
+}
+```
+
+Pitch is clamped between `-1` and `1`. A positive value speeds up playback and raises its pitch; a negative value slows it down and lowers its pitch. Use `0` for normal playback speed.
+
 > [!TIP]
 > If you use this API, it is highly recommended to make it a hard dependency.

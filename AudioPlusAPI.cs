@@ -56,6 +56,18 @@ namespace AudioPlusAPI
                 return track7.GetVolume();
             }
 
+            if (args.Length == 3 && args[0] is string setVolCommand && setVolCommand == "SetVolume" && args[1] is CustomAudioTrack track8 && args[2] is float volume)
+            {
+                track8.SetVolume(volume);
+                return null;
+            }
+
+            if (args.Length == 3 && args[0] is string setPitchCommand && setPitchCommand == "SetPitch" && args[1] is CustomAudioTrack track9 && args[2] is float pitch)
+            {
+                track9.SetPitch(pitch);
+                return null;
+            }
+
             return null;
         }
 
@@ -107,8 +119,8 @@ namespace AudioPlusAPI
         private readonly SoundEffect _soundEffect;
         private SoundEffectInstance _instance;
         private readonly Stopwatch _timer = new Stopwatch();
-        private bool _isPlaying;
         private float _volume = 1.0f;
+        private float _pitch;
 
         public float Volume
         {
@@ -123,11 +135,25 @@ namespace AudioPlusAPI
             }
         }
 
+        public float Pitch
+        {
+            get => _pitch;
+            set
+            {
+                _pitch = Math.Clamp(value, -1f, 1f);
+                if (_instance != null)
+                {
+                    _instance.Pitch = _pitch;
+                }
+            }
+        }
+
         public CustomAudioTrack(SoundEffect soundEffect)
         {
             _soundEffect = soundEffect;
             _instance = _soundEffect.CreateInstance();
             _instance.Volume = _volume;
+            _instance.Pitch = _pitch;
         }
 
         public void Play()
@@ -136,10 +162,10 @@ namespace AudioPlusAPI
             {
                 _instance = _soundEffect.CreateInstance();
                 _instance.Volume = _volume;
+                _instance.Pitch = _pitch;
             }
             _instance.Play();
             _timer.Restart();
-            _isPlaying = true;
         }
 
         public void Stop()
@@ -147,28 +173,22 @@ namespace AudioPlusAPI
             _instance?.Stop();
             _timer.Stop();
             _timer.Reset();
-            _isPlaying = false;
         }
 
         public void Pause()
         {
             _instance?.Pause();
             _timer.Stop();
-            _isPlaying = false;
         }
 
         public void Resume()
         {
             _instance?.Resume();
             _timer.Start();
-            _isPlaying = true;
         }
 
         public double GetPosMs()
         {
-            if (!_isPlaying)
-                return 0;
-
             return _timer.Elapsed.TotalMilliseconds;
         }
 
@@ -180,6 +200,21 @@ namespace AudioPlusAPI
         public float GetVolume()
         {
             return _volume;
+        }
+
+        public float GetPitch()
+        {
+            return _pitch;
+        }
+
+        public void SetVolume(float volume)
+        {
+            Volume = volume;
+        }
+
+        public void SetPitch(float pitch)
+        {
+            Pitch = pitch;
         }
     }
 }
