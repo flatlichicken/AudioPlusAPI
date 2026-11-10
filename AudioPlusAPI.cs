@@ -34,6 +34,12 @@ namespace AudioPlusAPI
                 return null;
             }
 
+            if (args.Length == 3 && args[0] is string playCommandWithMusicMode && playCommandWithMusicMode == "Play" && args[1] is CustomAudioTrack musicTrack && args[2] is bool playMusicMode)
+            {
+                musicTrack.Play(playMusicMode);
+                return null;
+            }
+
             if (args.Length == 2 && args[0] is string stopCommand && stopCommand == "Stop" && args[1] is CustomAudioTrack track2)
             {
                 track2.Stop();
@@ -137,8 +143,10 @@ namespace AudioPlusAPI
 
     public class CustomAudioTrack
     {
+        internal static CustomAudioTrack ActiveMusicTrack { get; private set; }
+
         private readonly SoundEffect _soundEffect;
-        private readonly bool _isMusic;
+        private bool _isMusic;
         private SoundEffectInstance _instance;
         private readonly Stopwatch _timer = new Stopwatch();
         private float _volume = 1.0f;
@@ -152,7 +160,7 @@ namespace AudioPlusAPI
                 _volume = Math.Clamp(value, 0f, 1f);
                 if (_instance != null)
                 {
-                    _instance.Volume = _isMusic ? _volume * Main.musicVolume : _volume;
+                    UpdateVolume();
                 }
             }
         }
@@ -183,6 +191,11 @@ namespace AudioPlusAPI
 
         public void Play()
         {
+            if (_isMusic)
+            {
+                ActiveMusicTrack = this;
+            }
+
             if (_instance.State == SoundState.Stopped)
             {
                 _instance = _soundEffect.CreateInstance();
@@ -193,9 +206,29 @@ namespace AudioPlusAPI
             _timer.Restart();
         }
 
+        public void Play(bool music)
+        {
+            _isMusic = music;
+            if (music)
+            {
+                ActiveMusicTrack = this;
+            }
+            else if (ActiveMusicTrack == this)
+            {
+                ActiveMusicTrack = null;
+            }
+
+            Play();
+            UpdateVolume();
+        }
+
         public void Stop()
         {
             _instance?.Stop();
+            if (ActiveMusicTrack == this)
+            {
+                ActiveMusicTrack = null;
+            }
             _timer.Stop();
             _timer.Reset();
         }
@@ -232,6 +265,8 @@ namespace AudioPlusAPI
             return _pitch;
         }
 
+        internal bool IsMusicPlaying => _instance.State != SoundState.Stopped;
+
         public void SetVolume(float volume)
         {
             Volume = volume;
@@ -240,6 +275,48 @@ namespace AudioPlusAPI
         public void SetPitch(float pitch)
         {
             Pitch = pitch;
+        }
+
+        internal void UpdateMusicVolume()
+        {
+            if (_isMusic && _instance.State == SoundState.Stopped && ActiveMusicTrack == this)
+            {
+                ActiveMusicTrack = null;
+            }
+
+            UpdateVolume();
+        }
+
+        private void UpdateVolume()
+        {
+            if (_instance != null)
+            {
+                _instance.Volume = _isMusic ? _volume * Main.musicVolume : _volume;
+            }
+        }
+    }
+
+    public class AudioPlusMusicSceneEffect : ModSceneEffect
+    {
+        public override int Music => 0;
+
+        public override SceneEffectPriority Priority => SceneEffectPriority.BossHigh;
+
+        public override float GetWeight(Player player) => 1f;
+
+        public override bool IsSceneEffectActive(Player player)
+        {
+            return !Main.gameMenu &&
+                CustomAudioTrack.ActiveMusicTrack is { } track &&
+                track.IsMusicPlaying;
+        }
+    }
+
+    public class AudioPlusMusicSystem : ModSystem
+    {
+        public override void PostUpdateEverything()
+        {
+            CustomAudioTrack.ActiveMusicTrack?.UpdateMusicVolume();
         }
     }
 }
