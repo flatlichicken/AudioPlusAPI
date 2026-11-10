@@ -28,15 +28,23 @@ namespace AudioPlusAPI
                 return LoadMusic(musicStream);
             }
 
-            if ((args.Length == 2 || args.Length == 3) && args[0] is string playCommand && playCommand == "Play" && args[1] is CustomAudioTrack track)
+            if ((args.Length >= 2 && args.Length <= 4) && args[0] is string playCommand && playCommand == "Play" && args[1] is CustomAudioTrack track)
             {
                 if (args.Length == 3 && args[2] is string mode)
                 {
-                    track.Play(mode);
+                    track.Play(volumeMode: mode);
+                }
+                else if (args.Length == 3 && args[2] is bool overrideMusic)
+                {
+                    track.Play(overrideMusic: overrideMusic);
+                }
+                else if (args.Length == 4 && args[2] is string mode4 && args[3] is bool overrideMusic4)
+                {
+                    track.Play(mode4, overrideMusic4);
                 }
                 else
                 {
-                    track.Play("");
+                    track.Play();
                 }
                 return null;
             }
@@ -208,25 +216,10 @@ namespace AudioPlusAPI
             _timer.Restart();
         }
 
-        public void Play(bool overrideMusic)
-        {
-            if (overrideMusic)
-            {
-                ActiveMusicTrack = this;
-            }
-            else if (ActiveMusicTrack == this)
-            {
-                ActiveMusicTrack = null;
-            }
-
-            Play();
-            UpdateVolume();
-        }
-
-        public void Play(string volumeMode = "")
+        public void Play(string volumeMode = "", bool overrideMusic = false)
         {
             _volumeMode = volumeMode;
-            if (IsMusic)
+            if (overrideMusic || IsMusic)
             {
                 ActiveMusicTrack = this;
             }
@@ -235,7 +228,14 @@ namespace AudioPlusAPI
                 ActiveMusicTrack = null;
             }
 
-            Play();
+            if (_instance.State == SoundState.Stopped)
+            {
+                _instance = _soundEffect.CreateInstance();
+                _instance.Volume = CalculateMasterVolume();
+                _instance.Pitch = _pitch;
+            }
+            _instance.Play();
+            _timer.Restart();
             UpdateVolume();
         }
 
