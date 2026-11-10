@@ -36,12 +36,34 @@ if (ModLoader.TryGetMod("AudioPlusAPI", out Mod audioAPI))
 }
 ```
 
-Pass `true` to `Play` to play the sound in override mode:
+#### Play with override mode:
 ```csharp
-audioAPI.Call("Play", musInst, true);
+if (ModLoader.TryGetMod("AudioPlusAPI", out Mod audioAPI))
+{
+    audioAPI.Call("Play", musInst, true);
+}
 ```
 
-While a override-mode sound is playing, AudioPlusAPI uses a boss-priority scene effect to suppress Terraria's current music, then plays the OGG track and applies Terraria's music-volume slider to it. This lets stream-loaded tracks replace in-game music without requiring them to be registered as music assets.
+While an override-mode sound is playing, AudioPlusAPI uses a boss-priority scene effect to suppress Terraria's current music, then plays the OGG track and applies Terraria's music-volume slider to it. This lets stream-loaded tracks replace in-game music without requiring them to be registered as music assets.
+
+#### Play with a specific volume mode:
+```csharp
+if (ModLoader.TryGetMod("AudioPlusAPI", out Mod audioAPI))
+{
+    audioAPI.Call("Play", musInst, "music");
+    audioAPI.Call("Play", musInst, "sound");
+    audioAPI.Call("Play", musInst, "ambient");
+    // you can leave the last argument blank if you want so it can be unaffected by the volume sliders.
+}
+```
+
+#### Play with combined volume mode and override mode:
+```csharp
+if (ModLoader.TryGetMod("AudioPlusAPI", out Mod audioAPI))
+{
+    audioAPI.Call("Play", musInst, "music", true);
+}
+```
 
 #### Get timestamp:
 ```csharp
@@ -49,6 +71,7 @@ if (ModLoader.TryGetMod("AudioPlusAPI", out Mod audioAPI))
 {
     double timeMilliseconds = (double)audioAPI.Call("GetPosMs", musInst);
     TimeSpan time = (TimeSpan)audioAPI.Call("GetPos", musInst);
+    float localVolume = (float)audioAPI.Call("GetVolume", musInst);
 }
 ```
 

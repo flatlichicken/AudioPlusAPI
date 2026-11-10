@@ -28,15 +28,16 @@ namespace AudioPlusAPI
                 return LoadMusic(musicStream);
             }
 
-            if (args.Length == 2 && args[0] is string playCommand && playCommand == "Play" && args[1] is CustomAudioTrack track)
+            if ((args.Length == 2 || args.Length == 3) && args[0] is string playCommand && playCommand == "Play" && args[1] is CustomAudioTrack track)
             {
-                track.Play();
-                return null;
-            }
-
-            if (args.Length == 3 && args[0] is string playCommandWithMusicMode && playCommandWithMusicMode == "Play" && args[1] is CustomAudioTrack musicTrack && args[2] is bool playMusicMode)
-            {
-                musicTrack.Play(playMusicMode);
+                if (args.Length == 3 && args[2] is string mode)
+                {
+                    track.Play(mode);
+                }
+                else
+                {
+                    track.Play("");
+                }
                 return null;
             }
 
@@ -87,6 +88,7 @@ namespace AudioPlusAPI
 
             return null;
         }
+
 
         public static CustomAudioTrack LoadOgg(Stream oggStream, bool music = false)
         {
@@ -146,7 +148,7 @@ namespace AudioPlusAPI
         internal static CustomAudioTrack ActiveMusicTrack { get; private set; }
 
         private readonly SoundEffect _soundEffect;
-        private bool _isMusic;
+        private string _volumeMode = "";
         private SoundEffectInstance _instance;
         private readonly Stopwatch _timer = new Stopwatch();
         private float _volume = 1.0f;
@@ -181,17 +183,17 @@ namespace AudioPlusAPI
         public CustomAudioTrack(SoundEffect soundEffect, bool music = false)
         {
             _soundEffect = soundEffect;
-            _isMusic = music;
+            _volumeMode = music ? "music" : "";
             _instance = _soundEffect.CreateInstance();
-            _instance.Volume = _isMusic ? _volume * Main.musicVolume : _volume;
+            _instance.Volume = CalculateMasterVolume();
             _instance.Pitch = _pitch;
         }
 
-        public bool IsMusic => _isMusic;
+        public bool IsMusic => _volumeMode == "music";
 
         public void Play()
         {
-            if (_isMusic)
+            if (IsMusic)
             {
                 ActiveMusicTrack = this;
             }
@@ -199,17 +201,32 @@ namespace AudioPlusAPI
             if (_instance.State == SoundState.Stopped)
             {
                 _instance = _soundEffect.CreateInstance();
-                _instance.Volume = _isMusic ? _volume * Main.musicVolume : _volume;
+                _instance.Volume = CalculateMasterVolume();
                 _instance.Pitch = _pitch;
             }
             _instance.Play();
             _timer.Restart();
         }
 
-        public void Play(bool music)
+        public void Play(bool overrideMusic)
         {
-            _isMusic = music;
-            if (music)
+            if (overrideMusic)
+            {
+                ActiveMusicTrack = this;
+            }
+            else if (ActiveMusicTrack == this)
+            {
+                ActiveMusicTrack = null;
+            }
+
+            Play();
+            UpdateVolume();
+        }
+
+        public void Play(string volumeMode = "")
+        {
+            _volumeMode = volumeMode;
+            if (IsMusic)
             {
                 ActiveMusicTrack = this;
             }
@@ -279,7 +296,7 @@ namespace AudioPlusAPI
 
         internal void UpdateMusicVolume()
         {
-            if (_isMusic && _instance.State == SoundState.Stopped && ActiveMusicTrack == this)
+            if (IsMusic && _instance.State == SoundState.Stopped && ActiveMusicTrack == this)
             {
                 ActiveMusicTrack = null;
             }
@@ -287,11 +304,19 @@ namespace AudioPlusAPI
             UpdateVolume();
         }
 
+        private float CalculateMasterVolume()
+        {
+            if (_volumeMode == "music") return _volume * Main.musicVolume;
+            if (_volumeMode == "sound") return _volume * Main.soundVolume;
+            if (_volumeMode == "ambient") return _volume * Main.ambientVolume;
+            return _volume;
+        }
+
         private void UpdateVolume()
         {
             if (_instance != null)
             {
-                _instance.Volume = _isMusic ? _volume * Main.musicVolume : _volume;
+                _instance.Volume = CalculateMasterVolume();
             }
         }
     }
@@ -316,6 +341,7 @@ namespace AudioPlusAPI
     {
         public override void PostUpdateEverything()
         {
+            // Now checks all potential active sound modes every frame
             CustomAudioTrack.ActiveMusicTrack?.UpdateMusicVolume();
         }
     }

@@ -1,2 +1,0 @@
-add volume control
-update github documentation
