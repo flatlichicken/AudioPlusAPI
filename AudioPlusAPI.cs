@@ -344,7 +344,7 @@ namespace AudioPlusAPI
 
         internal void UpdateFrame()
         {
-            if (_instance.State != SoundState.Paused && _timer.Elapsed.TotalMilliseconds >= _soundEffect.Duration.TotalMilliseconds)
+            if (_instance.State != SoundState.Paused && _timer.Elapsed.TotalMilliseconds > _soundEffect.Duration.TotalMilliseconds)
             {
                 if (_loop)
                 {
