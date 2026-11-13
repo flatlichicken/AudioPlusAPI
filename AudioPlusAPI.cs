@@ -72,6 +72,11 @@ namespace AudioPlusAPI
                 return track5.GetPosMs();
             }
 
+            if (args.Length == 2 && args[0] is string getLengthMsCommand && getLengthMsCommand == "GetLengthMs" && args[1] is CustomAudioTrack trackLengthMs)
+            {
+                return trackLengthMs.GetLengthMs();
+            }
+
             if (args.Length == 2 && args[0] is string getPosCommand && getPosCommand == "GetPos" && args[1] is CustomAudioTrack track6)
             {
                 return track6.GetPos();
@@ -91,6 +96,12 @@ namespace AudioPlusAPI
             if (args.Length == 3 && args[0] is string setPitchCommand && setPitchCommand == "SetPitch" && args[1] is CustomAudioTrack track9 && args[2] is float pitch)
             {
                 track9.SetPitch(pitch);
+                return null;
+            }
+
+            if (args.Length == 3 && args[0] is string setLoopCommand && setLoopCommand == "SetLoop" && args[1] is CustomAudioTrack track10 && args[2] is bool loop)
+            {
+                track10.SetLoop(loop);
                 return null;
             }
 
@@ -161,6 +172,7 @@ namespace AudioPlusAPI
         private readonly Stopwatch _timer = new Stopwatch();
         private float _volume = 1.0f;
         private float _pitch;
+        private bool _loop;
 
         public float Volume
         {
@@ -267,6 +279,11 @@ namespace AudioPlusAPI
             return _timer.Elapsed.TotalMilliseconds;
         }
 
+        public double GetLengthMs()
+        {
+            return _soundEffect.Duration.TotalMilliseconds;
+        }
+
         public TimeSpan GetPos()
         {
             return _timer.Elapsed;
@@ -294,6 +311,11 @@ namespace AudioPlusAPI
             Pitch = pitch;
         }
 
+        public void SetLoop(bool loop)
+        {
+            _loop = loop;
+        }
+
         internal void UpdateMusicVolume()
         {
             if (IsMusic && _instance.State == SoundState.Stopped && ActiveMusicTrack == this)
@@ -319,6 +341,30 @@ namespace AudioPlusAPI
                 _instance.Volume = CalculateMasterVolume();
             }
         }
+
+        internal void UpdateFrame()
+        {
+            if (_instance.State != SoundState.Paused && _timer.Elapsed.TotalMilliseconds >= _soundEffect.Duration.TotalMilliseconds)
+            {
+                if (_loop)
+                {
+                    _instance.Stop();
+                    _instance.Dispose();
+                    _instance = _soundEffect.CreateInstance();
+                    _instance.Volume = CalculateMasterVolume();
+                    _instance.Pitch = _pitch;
+                    _instance.Play();
+                    _timer.Restart();
+                }
+                else
+                {
+                    _instance.Stop();
+                    _instance.Dispose();
+                    _timer.Reset();
+                }
+            }
+            UpdateMusicVolume();
+        }
     }
 
     public class AudioPlusMusicSceneEffect : ModSceneEffect
@@ -341,8 +387,12 @@ namespace AudioPlusAPI
     {
         public override void PostUpdateEverything()
         {
-            // Now checks all potential active sound modes every frame
-            CustomAudioTrack.ActiveMusicTrack?.UpdateMusicVolume();
+            UpdateFrame();
+        }
+
+        private static void UpdateFrame()
+        {
+            CustomAudioTrack.ActiveMusicTrack?.UpdateFrame();
         }
     }
 }

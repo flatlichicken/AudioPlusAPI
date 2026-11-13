@@ -65,11 +65,12 @@ if (ModLoader.TryGetMod("AudioPlusAPI", out Mod audioAPI))
 }
 ```
 
-#### Get timestamp:
+#### Get timestamp and full length:
 ```csharp
 if (ModLoader.TryGetMod("AudioPlusAPI", out Mod audioAPI))
 {
     double timeMilliseconds = (double)audioAPI.Call("GetPosMs", musInst);
+    double totalMilliseconds = (double)audioAPI.Call("GetLengthMs", musInst);
     TimeSpan time = (TimeSpan)audioAPI.Call("GetPos", musInst);
     float localVolume = (float)audioAPI.Call("GetVolume", musInst);
 }
@@ -81,10 +82,12 @@ if (ModLoader.TryGetMod("AudioPlusAPI", out Mod audioAPI))
 {
     audioAPI.Call("SetVolume", musInst, 0.5f);
     audioAPI.Call("SetPitch", musInst, 0.5f);
+    audioAPI.Call("SetLoop", musInst, true);
 }
 ```
 
 Pitch is clamped between `-1` and `1`. A positive value speeds up playback and raises its pitch; a negative value slows it down and lowers its pitch. Use `0` for normal playback speed.
+Set looping on a music track with `SetLoop`; pass `false` to disable it.
 
 > [!TIP]
 > If you use this API, it is highly recommended to make it a hard dependency.
