@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using Microsoft.Xna.Framework.Audio;
@@ -10,6 +11,11 @@ namespace AudioPlusAPI
     public class AudioPlusAPI : Mod
     {
         public static AudioPlusAPI Instance => ModContent.GetInstance<AudioPlusAPI>();
+
+        public override void Unload()
+        {
+            CustomAudioTrack.DisposeAll();
+        }
 
         public override object Call(params object[] args)
         {
@@ -164,6 +170,7 @@ namespace AudioPlusAPI
 
     public class CustomAudioTrack
     {
+        private static readonly List<CustomAudioTrack> Tracks = new List<CustomAudioTrack>();
         internal static CustomAudioTrack ActiveMusicTrack { get; private set; }
 
         private readonly SoundEffect _soundEffect;
@@ -173,6 +180,7 @@ namespace AudioPlusAPI
         private float _volume = 1.0f;
         private float _pitch;
         private bool _loop;
+        private bool _isPlaying;
 
         public float Volume
         {
@@ -204,9 +212,8 @@ namespace AudioPlusAPI
         {
             _soundEffect = soundEffect;
             _volumeMode = music ? "music" : "";
-            _instance = _soundEffect.CreateInstance();
-            _instance.Volume = CalculateMasterVolume();
-            _instance.Pitch = _pitch;
+            CreateInstance();
+            Tracks.Add(this);
         }
 
         public bool IsMusic => _volumeMode == "music";
@@ -218,14 +225,13 @@ namespace AudioPlusAPI
                 ActiveMusicTrack = this;
             }
 
-            if (_instance.State == SoundState.Stopped)
+            if (_instance == null || _instance.State == SoundState.Stopped)
             {
-                _instance = _soundEffect.CreateInstance();
-                _instance.Volume = CalculateMasterVolume();
-                _instance.Pitch = _pitch;
+                CreateInstance();
             }
             _instance.Play();
             _timer.Restart();
+            _isPlaying = true;
         }
 
         public void Play(string volumeMode = "", bool overrideMusic = false)
@@ -240,26 +246,31 @@ namespace AudioPlusAPI
                 ActiveMusicTrack = null;
             }
 
-            if (_instance.State == SoundState.Stopped)
+            if (_instance == null || _instance.State == SoundState.Stopped)
             {
-                _instance = _soundEffect.CreateInstance();
-                _instance.Volume = CalculateMasterVolume();
-                _instance.Pitch = _pitch;
+                CreateInstance();
             }
             _instance.Play();
             _timer.Restart();
+            _isPlaying = true;
             UpdateVolume();
         }
 
         public void Stop()
         {
-            _instance?.Stop();
+            if (_instance != null)
+            {
+                _instance.Stop();
+                _instance.Dispose();
+                _instance = null;
+            }
             if (ActiveMusicTrack == this)
             {
                 ActiveMusicTrack = null;
             }
             _timer.Stop();
             _timer.Reset();
+            _isPlaying = false;
         }
 
         public void Pause()
@@ -270,8 +281,12 @@ namespace AudioPlusAPI
 
         public void Resume()
         {
-            _instance?.Resume();
-            _timer.Start();
+            if (_instance != null)
+            {
+                _instance.Resume();
+                _timer.Start();
+                _isPlaying = true;
+            }
         }
 
         public double GetPosMs()
@@ -299,7 +314,7 @@ namespace AudioPlusAPI
             return _pitch;
         }
 
-        internal bool IsMusicPlaying => _instance.State != SoundState.Stopped;
+        internal bool IsMusicPlaying => _instance != null && _instance.State != SoundState.Stopped;
 
         public void SetVolume(float volume)
         {
@@ -318,7 +333,7 @@ namespace AudioPlusAPI
 
         internal void UpdateMusicVolume()
         {
-            if (IsMusic && _instance.State == SoundState.Stopped && ActiveMusicTrack == this)
+            if (IsMusic && (_instance == null || _instance.State == SoundState.Stopped) && ActiveMusicTrack == this)
             {
                 ActiveMusicTrack = null;
             }
@@ -342,28 +357,50 @@ namespace AudioPlusAPI
             }
         }
 
+        private void CreateInstance()
+        {
+            _instance?.Dispose();
+            _instance = _soundEffect.CreateInstance();
+            _instance.Volume = CalculateMasterVolume();
+            _instance.Pitch = _pitch;
+        }
+
         internal void UpdateFrame()
         {
-            if (_instance.State != SoundState.Paused && _timer.Elapsed.TotalMilliseconds > _soundEffect.Duration.TotalMilliseconds)
+            if (_isPlaying && _instance != null && _instance.State == SoundState.Stopped)
             {
                 if (_loop)
                 {
-                    _instance.Stop();
-                    _instance.Dispose();
-                    _instance = _soundEffect.CreateInstance();
-                    _instance.Volume = CalculateMasterVolume();
-                    _instance.Pitch = _pitch;
+                    CreateInstance();
                     _instance.Play();
                     _timer.Restart();
                 }
                 else
                 {
-                    _instance.Stop();
-                    _instance.Dispose();
-                    _timer.Reset();
+                    Stop();
                 }
             }
+
             UpdateMusicVolume();
+        }
+
+        internal static void UpdateAll()
+        {
+            foreach (CustomAudioTrack track in Tracks)
+            {
+                track.UpdateFrame();
+            }
+        }
+
+        internal static void DisposeAll()
+        {
+            foreach (CustomAudioTrack track in Tracks)
+            {
+                track.Stop();
+            }
+
+            Tracks.Clear();
+            ActiveMusicTrack = null;
         }
     }
 
@@ -392,7 +429,7 @@ namespace AudioPlusAPI
 
         private static void UpdateFrame()
         {
-            CustomAudioTrack.ActiveMusicTrack?.UpdateFrame();
+            CustomAudioTrack.UpdateAll();
         }
     }
 }
